@@ -29,19 +29,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# =========================
-# Device
-# =========================
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu")  # force CPU for low memory
+_model = None
 
-# =========================
-# Model
-# =========================
-model = OCRModelVGG(num_classes=num_classes).to(device)
-state = torch.load("best_ocr_model_vgg_ep50_with_cer.pt", map_location=device)
-model.load_state_dict(state)
-model.eval()
-
+def get_model():
+    global _model
+    if _model is None:
+        model = OCRModelVGG(num_classes=num_classes)
+        state = torch.load(
+            "best_ocr_model_vgg_ep50_with_cer.pt",
+            map_location="cpu"
+        )
+        model.load_state_dict(state)
+        model.eval()
+        _model = model
+    return _model
 # =========================
 # Transform
 # =========================
@@ -74,8 +76,9 @@ def ocr(req: OCRRequest):
         tensor = transform(img).unsqueeze(0).to(device)  # (1, 1, 32, 256)
 
         # -------- Inference --------
+        model = get_model()
         with torch.no_grad():
-            logits = model(tensor)  # (T, B, C)
+            logits = model(tensor)
 
             if req.use_beam:
                 # beam search is optional – keep greedy default
