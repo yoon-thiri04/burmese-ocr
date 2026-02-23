@@ -1,4 +1,8 @@
+fastapi
+uvicorn
+gunicorn
 torch
-Pillow
 torchvision
-fastapi-standard
+pillow
+numpy
+python-multipart
