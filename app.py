@@ -142,3 +142,7 @@ def ctc_beam_search_decode(log_probs, idx2token, beam_width=5, blank=0):
         results.append(text)
 
     return results
+
+@app.get("/")
+def root():
+    return {"status": "Burmese OCR Backend Running"}
