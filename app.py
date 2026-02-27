@@ -16,20 +16,18 @@ from model import (
     ctc_greedy_decode,
 )
 
-# =========================
-# App
-# =========================
+
 app = FastAPI(title="Burmese OCR API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # localhost / HF / frontend
+    allow_origins=["*"],   
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-device = torch.device("cpu")  # force CPU for low memory
+device = torch.device("cpu") 
 _model = None
 
 def get_model():
@@ -44,9 +42,7 @@ def get_model():
         model.eval()
         _model = model
     return _model
-# =========================
-# Transform
-# =========================
+
 transform = T.Compose([
     T.Grayscale(),
     T.Resize((32, 256)),
@@ -57,25 +53,23 @@ transform = T.Compose([
 # Request schema
 # =========================
 class OCRRequest(BaseModel):
-    image: str                # base64 image from canvas
-    use_beam: Optional[bool] = False  # default = greedy
+    image: str                
+    use_beam: Optional[bool] = False 
 
 
-# =========================
-# OCR Endpoint
-# =========================
+
 @app.post("/ocr")
 def ocr(req: OCRRequest):
     try:
-        # -------- Decode image --------
+        
         image_data = req.image.split(",")[-1]
         image_bytes = base64.b64decode(image_data)
         img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
 
-        # -------- Preprocess --------
+        
         tensor = transform(img).unsqueeze(0).to(device)  # (1, 1, 32, 256)
 
-        # -------- Inference --------
+       
         model = get_model()
         with torch.no_grad():
             logits = model(tensor)
@@ -102,9 +96,7 @@ def ocr(req: OCRRequest):
         return {"error": str(e)}
 
 
-# =========================
-# Optional: Beam Search
-# =========================
+
 def ctc_beam_search_decode(log_probs, idx2token, beam_width=5, blank=0):
     """
     log_probs: (T, B, C)
